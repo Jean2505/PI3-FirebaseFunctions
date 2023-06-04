@@ -28,6 +28,7 @@ export const addDentista = functions
       end2: data.end2,
       end3: data.end3,
       cv: data.cv,
+      foto: data.foto,
     };
     try {
       const docRef = await colDentistas.add(dentista);
