@@ -179,19 +179,9 @@ export const escolheDentista = functions
         for (const i in rejeitados) {
           if (rejeitados[i] == doc.data().name) {
             tokens.push(doc.data().fcmToken);
-          } else if (data.escolhido == doc.data().name) {
-            const message = {
-              data: {
-                text: "aceita",
-              },
-            };
-            functions.logger.debug("ACEITO" + doc.data().fcmToken);
-            admin.messaging().sendToDevice(doc.data().fcmToken, message);
           }
         }
-        /* if (rejeitados.find(doc.data().name) != undefined) {
-          tokens.push(doc.data().fcmToken);
-        } else if (data.escolhido == doc.data().name) {
+        if (data.escolhido == doc.data().name) {
           const message = {
             data: {
               text: "aceita",
@@ -199,7 +189,7 @@ export const escolheDentista = functions
           };
           functions.logger.debug("ACEITO" + doc.data().fcmToken);
           admin.messaging().sendToDevice(doc.data().fcmToken, message);
-        }*/
+        }
       });
       functions.logger.debug("REJEITADOS 2222" + tokens);
       const message = {
@@ -209,7 +199,9 @@ export const escolheDentista = functions
         },
       };
       functions.logger.info("TOKENS" + message.tokens);
-      app.messaging().sendMulticast(message);
+      if (tokens.length == 0) {
+        app.messaging().sendMulticast(message);
+      }
       result = {
         status: "SUCCESS",
         message: "Dentista registrado com sucesso.",
