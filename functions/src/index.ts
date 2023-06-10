@@ -217,3 +217,72 @@ export const escolheDentista = functions
       return result;
     }
   });
+
+export const enviaLocalizacaoDentista = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data, context) => {
+    let result: CallableResponse;
+    try {
+      const snapshot = await db.collection("emergencias").get();
+      snapshot.forEach(async (doc) => {
+        if (data.id == doc.id) {
+          const message = {
+            data: {
+              text: "localizacao",
+              lat: data.lat,
+              long: data.long,
+            },
+          };
+          admin.messaging().sendToDevice(doc.data().fcmToken, message);
+        }
+      });
+      result = {
+        status: "SUCCESS",
+        message: "Localizacao enviada com sucesso.",
+        payload: JSON.parse(JSON.stringify({res: "sucesso"})),
+      };
+      return result;
+    } catch (e) {
+      result = {
+        status: "ERROR",
+        message: "Erro",
+        payload: JSON.parse(JSON.stringify({res: "fracasso"})),
+      };
+      return result;
+    }
+  });
+
+export const enviaLocalizacaoSocorrista = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data, context) => {
+    let result: CallableResponse;
+    try {
+      const snapshot = await db.collection("dentistas").get();
+      snapshot.forEach(async (doc) => {
+        if (data.nome == doc.data().name) {
+          const message = {
+            data: {
+              text: "localizacao",
+              lat: data.lat,
+              long: data.long,
+            },
+          };
+          functions.logger.debug("entrou aqui" + doc.data().fcmToken);
+          admin.messaging().sendToDevice(doc.data().fcmToken, message);
+        }
+      });
+      result = {
+        status: "SUCCESS",
+        message: "Localizacao enviada com sucesso.",
+        payload: JSON.parse(JSON.stringify({res: "sucesso"})),
+      };
+      return result;
+    } catch (e) {
+      result = {
+        status: "ERROR",
+        message: "Erro",
+        payload: JSON.parse(JSON.stringify({res: "fracasso"})),
+      };
+      return result;
+    }
+  });
