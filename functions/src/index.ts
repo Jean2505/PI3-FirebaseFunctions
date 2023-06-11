@@ -6,6 +6,7 @@ const db = app.firestore();
 const colDentistas = db.collection("dentistas");
 const colEmergencias = db.collection("emergencias");
 const colAvaliacoes = db.collection("avaliacoes");
+const colDisputas = db.collection("disputas");
 
 interface CallableResponse{
     status: string,
@@ -370,32 +371,59 @@ export const finalizaEmergencia = functions
     }
   });
 
-export const getAvaliacoes = functions
+export const getMedia = functions
   .region("southamerica-east1")
   .https.onCall(async (data, context) => {
     let result: CallableResponse;
     try {
-      const avaliacoes: object[] = [];
+      let aval = 0;
+      let quant = 0;
       const snapshot = await db.collection("avaliacoes").get();
       snapshot.forEach(async (doc) => {
         if (data.uid == doc.data().uidDentista) {
-          const aval = {
-            data: {
-              nome: doc.data().nome,
-              aval: doc.data().aval,
-              coment: doc.data().coment,
-            },
-          };
-          avaliacoes.push(aval);
+          quant = quant + 1;
+          aval = aval + doc.data().aval;
         }
       });
-      functions.logger.info(avaliacoes);
+      functions.logger.info(aval);
+      const media = aval/quant;
       const result = {
         status: "SUCCESS",
-        message: "Avaliações recebidas com sucesso.",
-        payload: JSON.parse(JSON.stringify(avaliacoes)),
+        message: media.toString(),
+        payload: JSON.parse(JSON.stringify({res: media})),
       };
       return result;
+    } catch (e) {
+      result = {
+        status: "ERROR",
+        message: "Erro",
+        payload: JSON.parse(JSON.stringify({res: "fracasso"})),
+      };
+      return result;
+    }
+  });
+
+export const addDenuncia = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data, context) => {
+    let result: CallableResponse;
+
+    const disputa = {
+      uidDentista: data.uidDentista,
+      nome: data.nome,
+      coment: data.coment,
+      motivo: data.motivo,
+    };
+    functions.logger.debug(disputa);
+    try {
+      const docRef = await colDisputas.add(disputa);
+      functions.logger.debug(docRef.id);
+      result = {
+        status: "SUCCESS",
+        message: "Disputa enviada com sucesso.",
+        payload: JSON.parse(JSON.stringify({res: "sucesso " + docRef.id})),
+      };
+      return result; 
     } catch (e) {
       result = {
         status: "ERROR",
