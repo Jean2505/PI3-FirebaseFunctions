@@ -5,6 +5,7 @@ const app = admin.initializeApp();
 const db = app.firestore();
 const colDentistas = db.collection("dentistas");
 const colEmergencias = db.collection("emergencias");
+const colAvaliacoes = db.collection("avaliacoes");
 
 interface CallableResponse{
     status: string,
@@ -275,6 +276,124 @@ export const enviaLocalizacaoSocorrista = functions
         status: "SUCCESS",
         message: "Localizacao enviada com sucesso.",
         payload: JSON.parse(JSON.stringify({res: "sucesso"})),
+      };
+      return result;
+    } catch (e) {
+      result = {
+        status: "ERROR",
+        message: "Erro",
+        payload: JSON.parse(JSON.stringify({res: "fracasso"})),
+      };
+      return result;
+    }
+  });
+
+export const addAvaliacao = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data, context) => {
+    let result: CallableResponse;
+    try {
+      let aval = {};
+      const snapshot = await db.collection("dentistas").get();
+      snapshot.forEach(async (doc) => {
+        if (data.uidDentista == doc.data().uid) {
+          const message = {
+            data: {
+              text: "avaliacao",
+              nome: data.nome,
+              aval: data.aval.toString(),
+              coment: data.coment,
+              avalApp: data.avalApp.toString(),
+              comentApp: data.comentApp,
+            },
+          };
+          aval = {
+            uidDentista: data.uidDentista,
+            nome: data.nome,
+            aval: data.aval,
+            coment: data.coment,
+            avalApp: data.avalApp,
+            comentApp: data.comentApp,
+          };
+          functions.logger.debug("entrou aqui" + doc.data().fcmToken);
+          admin.messaging().sendToDevice(doc.data().fcmToken, message);
+        }
+      });
+      const docRef = await colAvaliacoes.add(aval);
+      result = {
+        status: "SUCCESS",
+        message: "Localizacao enviada com sucesso.",
+        payload: JSON.parse(JSON.stringify({res: "sucesso " + docRef.id})),
+      };
+      return result;
+    } catch (e) {
+      result = {
+        status: "ERROR",
+        message: "Erro",
+        payload: JSON.parse(JSON.stringify({res: "fracasso"})),
+      };
+      return result;
+    }
+  });
+
+export const finalizaEmergencia = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data, context) => {
+    let result: CallableResponse;
+    try {
+      const snapshot = await db.collection("emergencias").get();
+      snapshot.forEach(async (doc) => {
+        if (data.emerg == doc.id) {
+          const message = {
+            data: {
+              text: "finalizada",
+              uid: data.uid,
+            },
+          };
+          functions.logger.debug("entrou aqui" + doc.data().fcmToken);
+          admin.messaging().sendToDevice(doc.data().fcmToken, message);
+        }
+      });
+      result = {
+        status: "SUCCESS",
+        message: "Localizacao enviada com sucesso.",
+        payload: JSON.parse(JSON.stringify({res: "sucesso "})),
+      };
+      return result;
+    } catch (e) {
+      result = {
+        status: "ERROR",
+        message: "Erro",
+        payload: JSON.parse(JSON.stringify({res: "fracasso"})),
+      };
+      return result;
+    }
+  });
+
+export const getAvaliacoes = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data, context) => {
+    let result: CallableResponse;
+    try {
+      const avaliacoes: object[] = [];
+      const snapshot = await db.collection("avaliacoes").get();
+      snapshot.forEach(async (doc) => {
+        if (data.uid == doc.data().uidDentista) {
+          const aval = {
+            data: {
+              nome: doc.data().nome,
+              aval: doc.data().aval,
+              coment: doc.data().coment,
+            },
+          };
+          avaliacoes.push(aval);
+        }
+      });
+      functions.logger.info(avaliacoes);
+      const result = {
+        status: "SUCCESS",
+        message: "Avaliações recebidas com sucesso.",
+        payload: JSON.parse(JSON.stringify(avaliacoes)),
       };
       return result;
     } catch (e) {
