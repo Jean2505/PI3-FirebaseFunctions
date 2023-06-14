@@ -150,6 +150,7 @@ export const trgAceite = functions
               end2: doc.data().end2,
               end3: doc.data().end3,
               cv: doc.data().cv,
+              foto: doc.data().foto,
             },
           };
           functions.logger.info(message);
@@ -166,23 +167,24 @@ export const escolheDentista = functions
   .https.onCall(async (data, context) => {
     let result: CallableResponse;
     try {
-      const rejeitados: string[] = [];
-      const tokens: string[] = [];
+      // const rejeitados: string[] = [];
+      // const tokens: string[] = [];
 
       // eslint-disable-next-line guard-for-in
-      for (const i in data.rej) {
+      /* for (const i in data.rej) {
         rejeitados.push(data.rej[i]);
-      }
+      }*/
+
       functions.logger.info(data);
-      functions.logger.debug("REJEITADOS" + rejeitados);
+      // functions.logger.debug("REJEITADOS" + rejeitados);
       functions.logger.debug("ESCOLHIDO" + data.escolhido);
       const snapshot = await db.collection("dentistas").get();
       snapshot.forEach(async (doc) => {
-        for (const i in rejeitados) {
+        /* for (const i in rejeitados) {
           if (rejeitados[i] == doc.data().name) {
             tokens.push(doc.data().fcmToken);
           }
-        }
+        }*/
         if (data.escolhido == doc.data().name) {
           const message = {
             data: {
@@ -193,7 +195,7 @@ export const escolheDentista = functions
           admin.messaging().sendToDevice(doc.data().fcmToken, message);
         }
       });
-      functions.logger.debug("REJEITADOS 2222" + tokens);
+      /* functions.logger.debug("REJEITADOS 2222" + tokens);
       const message = {
         tokens: tokens,
         data: {
@@ -203,7 +205,7 @@ export const escolheDentista = functions
       functions.logger.info("TOKENS" + message.tokens);
       if (tokens.length == 0) {
         app.messaging().sendMulticast(message);
-      }
+      }*/
       result = {
         status: "SUCCESS",
         message: "Dentista registrado com sucesso.",
@@ -423,7 +425,93 @@ export const addDenuncia = functions
         message: "Disputa enviada com sucesso.",
         payload: JSON.parse(JSON.stringify({res: "sucesso " + docRef.id})),
       };
-      return result; 
+      return result;
+    } catch (e) {
+      result = {
+        status: "ERROR",
+        message: "Erro",
+        payload: JSON.parse(JSON.stringify({res: "fracasso"})),
+      };
+      return result;
+    }
+  });
+
+export const dentistaLigou = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data, context) => {
+    let result: CallableResponse;
+    try {
+      const snapshot = await db.collection("emergencias").get();
+      snapshot.forEach(async (doc) => {
+        if (data.emerg == doc.id) {
+          const message = {
+            data: {
+              text: "ligacao",
+            },
+          };
+          functions.logger.debug("entrou aqui" + doc.data().fcmToken);
+          admin.messaging().sendToDevice(doc.data().fcmToken, message);
+        }
+      });
+      result = {
+        status: "SUCCESS",
+        message: "Localizacao enviada com sucesso.",
+        payload: JSON.parse(JSON.stringify({res: "sucesso"})),
+      };
+      return result;
+    } catch (e) {
+      result = {
+        status: "ERROR",
+        message: "Erro",
+        payload: JSON.parse(JSON.stringify({res: "fracasso"})),
+      };
+      return result;
+    }
+  });
+
+export const rejeitaDentista = functions
+  .region("southamerica-east1")
+  .https.onCall(async (data, context) => {
+    let result: CallableResponse;
+    try {
+      const rejeitados: string[] = [];
+      const tokens: string[] = [];
+
+      // eslint-disable-next-line guard-for-in
+      for (const i in data.rej) {
+        rejeitados.push(data.rej[i]);
+      }
+
+      // eslint-disable-next-line max-len
+      tokens.push("eRBmxGJRQOOfpBkayrPWXB:APA91bGN3ziyu_yFEWimLhUVuyaHY_6gqOHSJnZF3xO2Lv0e4Qll8zpqxUaIv1XsXE8DgusBKJdGD0BBEdRCcJ2eq6IMPB2ns2bCfCz66J6Ta37pb8cDZOyxv04Q8SQNTKQaHF-wkISN");
+
+      functions.logger.info(data);
+      functions.logger.debug("REJEITADOS" + rejeitados);
+      const snapshot = await db.collection("dentistas").get();
+      snapshot.forEach(async (doc) => {
+        for (const i in rejeitados) {
+          if (rejeitados[i] == doc.data().name) {
+            tokens.push(doc.data().fcmToken);
+          }
+        }
+      });
+      functions.logger.debug("REJEITADOS 2222" + tokens);
+      const message = {
+        tokens: tokens,
+        data: {
+          text: "rejeitada",
+        },
+      };
+      functions.logger.info("TOKENS" + message.tokens);
+      if (tokens.length == 0) {
+        app.messaging().sendMulticast(message);
+      }
+      result = {
+        status: "SUCCESS",
+        message: "Dentista registrado com sucesso.",
+        payload: JSON.parse(JSON.stringify({res: "sucesso"})),
+      };
+      return result;
     } catch (e) {
       result = {
         status: "ERROR",
